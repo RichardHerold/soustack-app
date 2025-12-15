@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { importRecipe } from "$lib/db/recipes";
+  import { browser } from "$app/environment";
 
   let importMethod: "url" | "file" | "paste" = "url";
   let urlInput = "";
@@ -36,58 +37,10 @@
     // #endregion
 
     try {
-      // #region agent log
-      fetch(
-        "http://127.0.0.1:7242/ingest/a90338e3-4e71-4021-9d29-b1dca4cf7605",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            location: "import/+page.svelte:23",
-            message: "Making fetch request to server",
-            data: { url: urlInput.trim() },
-            timestamp: Date.now(),
-            sessionId: "debug-session",
-            runId: "run1",
-            hypothesisId: "B",
-          }),
-        }
-      ).catch(() => {});
-      // #endregion
-
-      const response = await fetch("/api/scrape", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ url: urlInput.trim() }),
-      });
-
-      // #region agent log
-      fetch(
-        "http://127.0.0.1:7242/ingest/a90338e3-4e71-4021-9d29-b1dca4cf7605",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            location: "import/+page.svelte:31",
-            message: "Response received",
-            data: {
-              status: response.status,
-              statusText: response.statusText,
-              ok: response.ok,
-            },
-            timestamp: Date.now(),
-            sessionId: "debug-session",
-            runId: "run1",
-            hypothesisId: "C",
-          }),
-        }
-      ).catch(() => {});
-      // #endregion
-
-      if (!response.ok) {
-        const data = await response.json();
+      // Try client-side scraping first (uses browser cookies/session for paywalled content)
+      let recipe;
+      let html: string | undefined; // Declare outside try block for fallback
+      try {
         // #region agent log
         fetch(
           "http://127.0.0.1:7242/ingest/a90338e3-4e71-4021-9d29-b1dca4cf7605",
@@ -95,9 +48,73 @@
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              location: "import/+page.svelte:34",
-              message: "Response not OK",
-              data: { status: response.status, error: data.error },
+              location: "import/+page.svelte:fetch-html",
+              message: "Fetching HTML client-side",
+              data: { url: urlInput.trim() },
+              timestamp: Date.now(),
+              sessionId: "debug-session",
+              runId: "run1",
+              hypothesisId: "B",
+            }),
+          }
+        ).catch(() => {});
+        // #endregion
+
+        // Fetch HTML using browser's native fetch (includes cookies/session)
+        const htmlResponse = await fetch(urlInput.trim(), {
+          method: "GET",
+          credentials: "include", // Include cookies for authenticated content
+          headers: {
+            Accept:
+              "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          },
+        });
+
+        // #region agent log
+        fetch(
+          "http://127.0.0.1:7242/ingest/a90338e3-4e71-4021-9d29-b1dca4cf7605",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              location: "import/+page.svelte:html-response",
+              message: "HTML response received",
+              data: {
+                status: htmlResponse.status,
+                statusText: htmlResponse.statusText,
+                ok: htmlResponse.ok,
+              },
+              timestamp: Date.now(),
+              sessionId: "debug-session",
+              runId: "run1",
+              hypothesisId: "C",
+            }),
+          }
+        ).catch(() => {});
+        // #endregion
+
+        if (!htmlResponse.ok) {
+          throw new Error(
+            `HTTP ${htmlResponse.status}: ${htmlResponse.statusText}`
+          );
+        }
+
+        html = await htmlResponse.text();
+
+        // #region agent log
+        fetch(
+          "http://127.0.0.1:7242/ingest/a90338e3-4e71-4021-9d29-b1dca4cf7605",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              location: "import/+page.svelte:extract-recipe",
+              message:
+                "Extracting recipe from HTML using extractRecipeFromHTML",
+              data: {
+                htmlLength: html.length,
+                htmlPreview: html.substring(0, 200),
+              },
               timestamp: Date.now(),
               sessionId: "debug-session",
               runId: "run1",
@@ -106,37 +123,121 @@
           }
         ).catch(() => {});
         // #endregion
-        throw new Error(data.error || "Failed to scrape recipe");
+
+        // Extract recipe directly in browser using extractRecipeFromHTML
+        // Dynamic import to avoid SSR issues
+        if (!browser) {
+          throw new Error("Client-side extraction only available in browser");
+        }
+        const soustackModule = (await import("soustack")) as any;
+        if (!soustackModule.extractRecipeFromHTML) {
+          throw new Error("extractRecipeFromHTML not available");
+        }
+        recipe = soustackModule.extractRecipeFromHTML(html);
+
+        // #region agent log
+        fetch(
+          "http://127.0.0.1:7242/ingest/a90338e3-4e71-4021-9d29-b1dca4cf7605",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              location: "import/+page.svelte:recipe-extracted",
+              message: "Recipe extracted successfully",
+              data: {
+                recipeName: recipe?.name,
+                recipeKeys: recipe ? Object.keys(recipe) : null,
+                ingredientsLength: recipe?.ingredients?.length || 0,
+              },
+              timestamp: Date.now(),
+              sessionId: "debug-session",
+              runId: "run1",
+              hypothesisId: "E",
+            }),
+          }
+        ).catch(() => {});
+        // #endregion
+
+        // #region agent log
+        fetch(
+          "http://127.0.0.1:7242/ingest/a90338e3-4e71-4021-9d29-b1dca4cf7605",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              location: "import/+page.svelte:recipe",
+              message: "Client-side scraping succeeded",
+              data: {
+                recipeIsNull: recipe === null,
+                recipeName: recipe?.name,
+                recipeKeys: recipe ? Object.keys(recipe) : null,
+                ingredientsLength: recipe?.ingredients?.length || 0,
+              },
+              timestamp: Date.now(),
+              sessionId: "debug-session",
+              runId: "run1",
+              hypothesisId: "F",
+            }),
+          }
+        ).catch(() => {});
+        // #endregion
+      } catch (clientError) {
+        // #region agent log
+        fetch(
+          "http://127.0.0.1:7242/ingest/a90338e3-4e71-4021-9d29-b1dca4cf7605",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              location: "import/+page.svelte:fallback",
+              message: "Client-side scraping failed, falling back to server",
+              data: {
+                error:
+                  clientError instanceof Error
+                    ? clientError.message
+                    : String(clientError),
+                errorStack:
+                  clientError instanceof Error ? clientError.stack : undefined,
+                errorType: clientError?.constructor?.name,
+                hasHtml: typeof html !== "undefined",
+              },
+              timestamp: Date.now(),
+              sessionId: "debug-session",
+              runId: "run1",
+              hypothesisId: "G",
+            }),
+          }
+        ).catch(() => {});
+        // #endregion
+
+        console.error("Client-side scraping failed:", clientError);
+
+        // Fallback to server-side extraction
+        // If we have HTML (browser-fetched with cookies), send it to server for extraction
+        // Otherwise, fall back to server-side URL scraping
+        const response = await fetch("/api/scrape", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(
+            typeof html !== "undefined" && html
+              ? { html, url: urlInput.trim() } // Send browser-fetched HTML (includes cookies)
+              : { url: urlInput.trim() } // Fall back to server-side URL scraping
+          ),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || "Failed to scrape recipe");
+        }
+
+        const result = await response.json();
+        recipe = result.recipe;
       }
 
-      const { recipe } = await response.json();
-      // #region agent log
-      fetch(
-        "http://127.0.0.1:7242/ingest/a90338e3-4e71-4021-9d29-b1dca4cf7605",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            location: "import/+page.svelte:37",
-            message: "Recipe received",
-            data: {
-              recipeIsNull: recipe === null,
-              recipeIsUndefined: recipe === undefined,
-              recipeName: recipe?.name,
-              recipeKeys: recipe ? Object.keys(recipe) : null,
-              ingredientsLength: recipe?.ingredients?.length || 0,
-            },
-            timestamp: Date.now(),
-            sessionId: "debug-session",
-            runId: "run1",
-            hypothesisId: "E",
-          }),
-        }
-      ).catch(() => {});
-      // #endregion
-
       if (!recipe) {
-        throw new Error("No recipe data received from server");
+        throw new Error("No recipe data found");
       }
 
       // Check if recipe is incomplete (e.g., empty ingredients from paywall)
