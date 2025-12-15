@@ -4,9 +4,9 @@
 
 /* Design Tokens */
 :root {
-  /* Colors - Light Mode */
-  --color-primary: #FE5E0B; /* Persimmon - Brand "Pop" */
-  --color-primary-hover: #E54D00;
+  /* Colors */
+  --color-primary: #0F172A; /* Midnight - used for accents */
+  --color-primary-hover: #1E293B;
   --color-secondary: #2DD4BF; /* Teal - The New "Cool" Accent */
   
   --color-bg: #FFFAF0; /* Floral - Canvas */
@@ -46,21 +46,6 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
-/* Dark Mode */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #0F172A; /* Midnight - Text & Backgrounds */
-    --color-surface: #1E293B;
-    --color-border: #94A3B8; /* Slate - Structural Lines */
-    
-    --color-text: #FFFAF0; /* Floral - Canvas */
-    --color-text-muted: #94A3B8;
-    --color-text-light: #64748B;
-    
-    --color-primary: #FE5E0B; /* Persimmon - Brand "Pop" */
-    --color-primary-hover: #FF6B1F;
-  }
-}
 
 /* Reset */
 *, *::before, *::after {
@@ -121,14 +106,8 @@ input, textarea, select {
 
 input:focus, textarea:focus, select:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(254, 94, 11, 0.1);
-}
-
-@media (prefers-color-scheme: dark) {
-  input:focus, textarea:focus, select:focus {
-    box-shadow: 0 0 0 2px rgba(254, 94, 11, 0.2);
-  }
+  border-color: var(--color-text);
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1);
 }
 
 /* Buttons */
