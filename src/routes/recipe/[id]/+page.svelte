@@ -2,17 +2,25 @@
   import { page } from "$app/stores";
   import { onMount } from "svelte";
   import { db } from "$lib/db";
-  import type { StoredRecipe, SoustackIngredient } from "$lib/db";
+  import type { StoredRecipe } from "$lib/db";
   import { markAsCooked, deleteRecipe, exportRecipe } from "$lib/db/recipes";
   import { goto } from "$app/navigation";
   import ScaleControl from "$lib/components/ScaleControl.svelte";
   import IngredientList from "$lib/components/IngredientList.svelte";
   import InstructionList from "$lib/components/InstructionList.svelte";
+  import {
+    detectImagePattern,
+    getAllImages,
+    getPrimaryImage,
+    getStepImages
+  } from "$lib/utils/images";
+  import ImageGallery from "$lib/components/ImageGallery.svelte";
 
   let recipe: StoredRecipe | null = null;
   let loading = true;
   let error: string | null = null;
   let scaleFactor = 1;
+  let heroImageError = false;
 
   $: recipeId = $page.params.id;
 
@@ -227,6 +235,24 @@
 
     URL.revokeObjectURL(url);
   }
+  $: imagePattern = recipe ? detectImagePattern(recipe) : "none";
+  $: heroImage = recipe ? getPrimaryImage(recipe) : undefined;
+  $: allImages = recipe ? getAllImages(recipe) : [];
+  $: stepImages = recipe ? getStepImages(recipe) : new Map();
+  $: showHero =
+    !!heroImage &&
+    !heroImageError &&
+    (imagePattern === "hero" || imagePattern === "hybrid");
+  $: showStepImages = imagePattern === "step-by-step" || imagePattern === "hybrid";
+
+  $: if (heroImage) {
+    // Reset error state when image changes
+    heroImageError = false;
+  }
+
+  function handleHeroError() {
+    heroImageError = true;
+  }
 </script>
 
 <svelte:head>
@@ -242,6 +268,22 @@
   </div>
 {:else if recipe}
   <article class="recipe-detail">
+    {#if showHero && heroImage}
+      <div class="recipe-hero">
+        {#if allImages.length > 1}
+          <ImageGallery images={allImages} alt={recipe.name} />
+        {:else}
+          <img
+            src={heroImage}
+            alt={recipe.name}
+            class="hero-image"
+            loading="lazy"
+            on:error={handleHeroError}
+          />
+        {/if}
+      </div>
+    {/if}
+
     <!-- Header -->
     <header class="recipe-header">
       <div class="header-top">
@@ -316,7 +358,11 @@
       <!-- Instructions -->
       <section class="instructions-section">
         <h2>Instructions</h2>
-        <InstructionList instructions={recipe.instructions} />
+        <InstructionList
+          instructions={recipe.instructions}
+          stepImages={stepImages}
+          showStepImages={showStepImages}
+        />
       </section>
     </div>
 

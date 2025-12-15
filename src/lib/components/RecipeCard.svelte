@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { StoredRecipe } from "$lib/db";
   import { toggleFavorite } from "$lib/db/recipes";
+  import { getPrimaryImage } from "$lib/utils/images";
 
   export let recipe: StoredRecipe;
 
@@ -51,6 +52,25 @@
   // Get total time
   $: totalTime = formatTime(recipe.time?.total);
 
+  $: imageUrl = getPrimaryImage(recipe);
+  let imageLoaded = false;
+  let imageError = false;
+  let lastImageUrl: string | undefined;
+
+  $: if (imageUrl !== lastImageUrl) {
+    lastImageUrl = imageUrl;
+    imageLoaded = false;
+    imageError = false;
+  }
+
+  function handleLoad() {
+    imageLoaded = true;
+  }
+
+  function handleError() {
+    imageError = true;
+  }
+
   async function handleFavorite(e: Event) {
     e.preventDefault();
     e.stopPropagation();
@@ -59,73 +79,95 @@
 </script>
 
 <a href="/recipe/{recipe._id}" class="recipe-card card">
-  <div class="card-header">
-    <h3 class="recipe-name">{recipe.name}</h3>
-    <button
-      class="favorite-btn"
-      class:is-favorite={recipe._favorite}
-      on:click={handleFavorite}
-      aria-label={recipe._favorite
-        ? "Remove from favorites"
-        : "Add to favorites"}
-    >
-      {recipe._favorite ? "★" : "☆"}
-    </button>
-  </div>
-
-  {#if recipe.description}
-    <p class="recipe-description">{recipe.description}</p>
-  {/if}
-
-  <div class="recipe-meta">
-    {#if totalTime}
-      <span class="meta-item">
-        <span class="meta-icon">⏱</span>
-        {totalTime}
-      </span>
-    {/if}
-
-    <span class="meta-item">
-      <span class="meta-icon">🥕</span>
-      {ingredientCount} ingredients
-    </span>
-
-    {#if recipe.yield?.servings}
-      <span class="meta-item">
-        <span class="meta-icon">👥</span>
-        {recipe.yield.servings} servings
-      </span>
-    {/if}
-  </div>
-
-  {#if recipe.tags && recipe.tags.length > 0}
-    <div class="recipe-tags">
-      {#each recipe.tags.slice(0, 3) as tag}
-        <span class="tag">{tag}</span>
-      {/each}
-      {#if recipe.tags.length > 3}
-        <span class="tag">+{recipe.tags.length - 3}</span>
-      {/if}
+  {#if imageUrl && !imageError}
+    <div class="card-image" class:loaded={imageLoaded}>
+      <img
+        src={imageUrl}
+        alt=""
+        loading="lazy"
+        on:load={handleLoad}
+        on:error={handleError}
+      />
     </div>
   {/if}
+
+  <div class="card-content">
+    <div class="card-header">
+      <h3 class="recipe-name">{recipe.name}</h3>
+      <button
+        class="favorite-btn"
+        class:is-favorite={recipe._favorite}
+        on:click={handleFavorite}
+        aria-label={recipe._favorite
+          ? "Remove from favorites"
+          : "Add to favorites"}
+      >
+        {recipe._favorite ? "★" : "☆"}
+      </button>
+    </div>
+
+    {#if recipe.description}
+      <p class="recipe-description">{recipe.description}</p>
+    {/if}
+
+    <div class="recipe-meta">
+      {#if totalTime}
+        <span class="meta-item">
+          <span class="meta-icon">⏱</span>
+          {totalTime}
+        </span>
+      {/if}
+
+      <span class="meta-item">
+        <span class="meta-icon">🥕</span>
+        {ingredientCount} ingredients
+      </span>
+
+      {#if recipe.yield?.servings}
+        <span class="meta-item">
+          <span class="meta-icon">👥</span>
+          {recipe.yield.servings} servings
+        </span>
+      {/if}
+    </div>
+
+    {#if recipe.tags && recipe.tags.length > 0}
+      <div class="recipe-tags">
+        {#each recipe.tags.slice(0, 3) as tag}
+          <span class="tag">{tag}</span>
+        {/each}
+        {#if recipe.tags.length > 3}
+          <span class="tag">+{recipe.tags.length - 3}</span>
+        {/if}
+      </div>
+    {/if}
+  </div>
 </a>
 
 <style>
   .recipe-card {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
     text-decoration: none;
     color: inherit;
+    overflow: hidden;
     transition:
       transform 0.2s,
       box-shadow 0.2s;
+    padding: 0;
   }
 
   .recipe-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
     text-decoration: none;
+  }
+
+  .card-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-lg);
   }
 
   .card-header {
