@@ -75,10 +75,18 @@
   {:else if $recipeCount === 0}
     <!-- Empty State - No Recipes -->
     <section class="empty-state">
-      <div class="empty-icon">📚</div>
+      <div class="empty-icon">
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="12" y="8" width="40" height="48" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+          <line x1="20" y1="18" x2="44" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="20" y1="26" x2="44" y2="26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="20" y1="34" x2="36" y2="34" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="20" y1="42" x2="40" y2="42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
       <h2>No recipes yet</h2>
       <p>Import your first recipe to get started</p>
-      <a href="/import" class="btn btn-primary">Import a Recipe</a>
+      <a href="/import" class="btn btn-import">Import a Recipe</a>
     </section>
   {:else}
     <!-- Empty State - No Results -->
@@ -133,8 +141,16 @@
   }
 
   .empty-icon {
-    font-size: 4rem;
-    opacity: 0.5;
+    opacity: 0.4;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .empty-icon svg {
+    width: 64px;
+    height: 64px;
   }
 
   .empty-state h2 {
@@ -144,5 +160,16 @@
   .empty-state p {
     color: var(--color-text-muted);
     margin: 0;
+  }
+
+  .btn-import {
+    background: #0F172A; /* Midnight */
+    color: #ffffff;
+    font-weight: 500;
+  }
+
+  .btn-import:hover {
+    background: #1E293B;
+    color: #ffffff;
   }
 </style>

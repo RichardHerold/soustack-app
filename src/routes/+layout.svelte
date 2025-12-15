@@ -44,7 +44,7 @@
   }
 
   header {
-    background: #faf9f7;
+    background: var(--color-bg);
     border-bottom: 1px solid var(--color-border);
     padding: 0 2rem;
     position: sticky;
@@ -65,12 +65,16 @@
     display: flex;
     align-items: center;
     gap: 1.5rem;
-    text-decoration: none;
-    color: var(--color-text);
     font-family: "IBM Plex Mono", "SF Mono", Consolas, monospace;
-    font-weight: 700;
-    font-size: 1.5rem;
-    letter-spacing: -0.02em;
+    font-size: 19.8px;
+    font-weight: 600;
+    letter-spacing: -0.396px;
+    line-height: 32.67px;
+    text-decoration-color: var(--color-text);
+    text-decoration-line: none;
+    text-decoration-style: solid;
+    text-decoration-thickness: auto;
+    color: var(--color-text);
     transition: opacity 0.2s;
   }
 
