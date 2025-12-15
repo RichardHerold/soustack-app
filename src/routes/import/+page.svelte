@@ -376,14 +376,9 @@
           Paste a link to any recipe page. We'll extract the recipe data
           automatically.
         </p>
-        <p class="hint warning">
-          ⚠️ Note: Some sites (like NYTimes Cooking) have paywalls that may
-          limit the amount of recipe data we can extract. For complete recipes,
-          consider using the "Paste JSON" method instead.
-        </p>
       </div>
       <button
-        class="btn btn-primary"
+        class="btn btn-import"
         on:click={handleUrlImport}
         disabled={loading}
       >
@@ -426,7 +421,7 @@
         <p class="hint">Paste Soustack JSON or Schema.org recipe JSON.</p>
       </div>
       <button
-        class="btn btn-primary"
+        class="btn btn-import"
         on:click={handlePasteImport}
         disabled={loading}
       >
@@ -442,96 +437,98 @@
   </div>
 
   <!-- Sample Recipe -->
-  <div class="sample-section">
-    <h3>Try a sample recipe</h3>
-    <p>Don't have a recipe handy? Try this sample:</p>
-    <button
-      class="btn btn-secondary"
-      on:click={() => {
-        pasteInput = JSON.stringify(
-          {
-            soustack: "0.1",
-            name: "Basic Sourdough Bread",
-            description:
-              "A simple sourdough loaf with a crispy crust and chewy interior.",
-            yield: {
-              amount: 1,
-              unit: "loaf",
-              servings: 8,
+  {#if importMethod === "paste"}
+    <div class="sample-section">
+      <h3>Try a sample recipe</h3>
+      <p>Don't have a recipe handy? Try this sample:</p>
+      <button
+        class="btn btn-secondary"
+        on:click={() => {
+          pasteInput = JSON.stringify(
+            {
+              soustack: "0.1",
+              name: "Basic Sourdough Bread",
+              description:
+                "A simple sourdough loaf with a crispy crust and chewy interior.",
+              yield: {
+                amount: 1,
+                unit: "loaf",
+                servings: 8,
+              },
+              time: {
+                active: "PT45M",
+                passive: "PT14H",
+                total: "PT16H",
+              },
+              tags: ["bread", "sourdough", "fermented"],
+              ingredients: [
+                {
+                  item: "500g bread flour",
+                  quantity: { amount: 500, unit: "g" },
+                  name: "bread flour",
+                  scaling: { type: "linear" },
+                },
+                {
+                  item: "375g water",
+                  quantity: { amount: 375, unit: "g" },
+                  name: "water",
+                  scaling: { type: "linear" },
+                },
+                {
+                  item: "100g active sourdough starter",
+                  quantity: { amount: 100, unit: "g" },
+                  name: "sourdough starter",
+                  scaling: { type: "linear" },
+                },
+                {
+                  item: "10g salt",
+                  quantity: { amount: 10, unit: "g" },
+                  name: "salt",
+                  scaling: { type: "proportional", factor: 0.7 },
+                },
+              ],
+              instructions: [
+                {
+                  step: "Mix flour and water in a large bowl. Let rest for 30 minutes (autolyse).",
+                  duration: "PT30M",
+                },
+                {
+                  step: "Add starter and salt. Mix until well combined. The dough will be shaggy.",
+                  duration: "PT5M",
+                },
+                {
+                  step: "Over the next 3-4 hours, perform 4 sets of stretch and folds, 45 minutes apart.",
+                  duration: "PT4H",
+                },
+                {
+                  step: "Shape the dough into a round and place in a floured banneton.",
+                  duration: "PT10M",
+                },
+                {
+                  step: "Cover and refrigerate for 8-14 hours.",
+                  duration: "PT12H",
+                },
+                {
+                  step: "Preheat oven to 500°F with a Dutch oven inside for 45 minutes.",
+                  duration: "PT45M",
+                },
+                {
+                  step: "Score the dough and bake covered for 20 minutes, then uncovered for 20-25 minutes until deep golden.",
+                  duration: "PT45M",
+                },
+                { step: "Cool completely before slicing, at least 1 hour." },
+              ],
             },
-            time: {
-              active: "PT45M",
-              passive: "PT14H",
-              total: "PT16H",
-            },
-            tags: ["bread", "sourdough", "fermented"],
-            ingredients: [
-              {
-                item: "500g bread flour",
-                quantity: { amount: 500, unit: "g" },
-                name: "bread flour",
-                scaling: { type: "linear" },
-              },
-              {
-                item: "375g water",
-                quantity: { amount: 375, unit: "g" },
-                name: "water",
-                scaling: { type: "linear" },
-              },
-              {
-                item: "100g active sourdough starter",
-                quantity: { amount: 100, unit: "g" },
-                name: "sourdough starter",
-                scaling: { type: "linear" },
-              },
-              {
-                item: "10g salt",
-                quantity: { amount: 10, unit: "g" },
-                name: "salt",
-                scaling: { type: "proportional", factor: 0.7 },
-              },
-            ],
-            instructions: [
-              {
-                step: "Mix flour and water in a large bowl. Let rest for 30 minutes (autolyse).",
-                duration: "PT30M",
-              },
-              {
-                step: "Add starter and salt. Mix until well combined. The dough will be shaggy.",
-                duration: "PT5M",
-              },
-              {
-                step: "Over the next 3-4 hours, perform 4 sets of stretch and folds, 45 minutes apart.",
-                duration: "PT4H",
-              },
-              {
-                step: "Shape the dough into a round and place in a floured banneton.",
-                duration: "PT10M",
-              },
-              {
-                step: "Cover and refrigerate for 8-14 hours.",
-                duration: "PT12H",
-              },
-              {
-                step: "Preheat oven to 500°F with a Dutch oven inside for 45 minutes.",
-                duration: "PT45M",
-              },
-              {
-                step: "Score the dough and bake covered for 20 minutes, then uncovered for 20-25 minutes until deep golden.",
-                duration: "PT45M",
-              },
-              { step: "Cool completely before slicing, at least 1 hour." },
-            ],
-          },
-          null,
-          2
-        );
-        importMethod = "paste";
-      }}
-    >
-      Load Sample Recipe
-    </button>
-  </div>
+            null,
+            2
+          );
+          importMethod = "paste";
+        }}
+      >
+        Load Sample Recipe
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -582,12 +579,12 @@
   }
 
   .tab:hover {
-    border-color: var(--color-primary);
+    border-color: #0f172a; /* Midnight */
   }
 
   .tab.active {
-    background: var(--color-primary);
-    border-color: var(--color-primary);
+    background: #0f172a; /* Midnight */
+    border-color: #0f172a;
     color: white;
   }
 
@@ -614,7 +611,7 @@
   }
 
   .hint.warning {
-    color: #d97706;
+    color: var(--color-warning);
     font-weight: 500;
   }
 
@@ -659,10 +656,10 @@
 
   .error-message {
     padding: var(--space-md);
-    background: #fef2f2;
-    border: 1px solid #fecaca;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--color-error);
     border-radius: var(--radius-md);
-    color: #dc2626;
+    color: var(--color-error);
     font-size: 0.875rem;
   }
 
@@ -679,5 +676,21 @@
   .sample-section p {
     color: var(--color-text-muted);
     margin: 0 0 var(--space-md);
+  }
+
+  .btn-import {
+    background: #0f172a; /* Midnight */
+    color: #ffffff;
+    font-weight: 500;
+  }
+
+  .btn-import:hover {
+    background: #1e293b;
+    color: #ffffff;
+  }
+
+  .btn-import:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 </style>

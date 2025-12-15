@@ -2,9 +2,12 @@
   import type { SoustackInstruction } from '$lib/db';
   
   export let instructions: Array<string | SoustackInstruction>;
+  export let stepImages: Map<number, string> = new Map();
+  export let showStepImages = false;
   
   // Track completed steps
   let completedSteps: Set<number> = new Set();
+  let failedStepImages: Set<number> = new Set();
   
   function toggleStep(index: number) {
     if (completedSteps.has(index)) {
@@ -13,6 +16,11 @@
       completedSteps.add(index);
     }
     completedSteps = completedSteps; // Trigger reactivity
+  }
+  
+  function hideStepImage(index: number) {
+    failedStepImages.add(index);
+    failedStepImages = new Set(failedStepImages);
   }
   
   // Format duration
@@ -53,40 +61,56 @@
 <ol class="instruction-list">
   {#each instructions as instruction, i}
     {@const meta = getStepMeta(instruction)}
+    {@const imageUrl = stepImages.get(i)}
+    {@const showImage = Boolean(showStepImages && imageUrl && !failedStepImages.has(i))}
     <li 
       class="instruction-item"
       class:completed={completedSteps.has(i)}
+      class:has-image={showImage}
     >
-      <button 
-        class="step-number"
-        on:click={() => toggleStep(i)}
-        aria-label={completedSteps.has(i) ? 'Mark as incomplete' : 'Mark as complete'}
-      >
-        {#if completedSteps.has(i)}
-          ✓
-        {:else}
-          {i + 1}
-        {/if}
-      </button>
-      
-      <div class="step-content">
-        <p class="step-text">{getStepText(instruction)}</p>
+      <div class="step-main">
+        <button 
+          class="step-number"
+          on:click={() => toggleStep(i)}
+          aria-label={completedSteps.has(i) ? 'Mark as incomplete' : 'Mark as complete'}
+        >
+          {#if completedSteps.has(i)}
+            ✓
+          {:else}
+            {i + 1}
+          {/if}
+        </button>
         
-        {#if meta.duration || meta.equipment}
-          <div class="step-meta">
-            {#if meta.duration}
-              <span class="meta-badge">⏱ {meta.duration}</span>
-            {/if}
-            {#if meta.equipment}
-              <span class="meta-badge">🍳 {meta.equipment}</span>
-            {/if}
-          </div>
-        {/if}
-        
-        {#if meta.notes}
-          <p class="step-notes">{meta.notes}</p>
-        {/if}
+        <div class="step-content">
+          <p class="step-text">{getStepText(instruction)}</p>
+          
+          {#if meta.duration || meta.equipment}
+            <div class="step-meta">
+              {#if meta.duration}
+                <span class="meta-badge">⏱ {meta.duration}</span>
+              {/if}
+              {#if meta.equipment}
+                <span class="meta-badge">🍳 {meta.equipment}</span>
+              {/if}
+            </div>
+          {/if}
+          
+          {#if meta.notes}
+            <p class="step-notes">{meta.notes}</p>
+          {/if}
+        </div>
       </div>
+      
+      {#if showImage && imageUrl}
+        <div class="step-image">
+          <img 
+            src={imageUrl}
+            alt={`Step ${i + 1}`}
+            loading="lazy"
+            on:error={() => hideStepImage(i)}
+          />
+        </div>
+      {/if}
     </li>
   {/each}
 </ol>
@@ -104,7 +128,14 @@
   
   .instruction-item {
     display: flex;
+    flex-direction: column;
     gap: var(--space-md);
+  }
+  
+  .step-main {
+    display: flex;
+    gap: var(--space-md);
+    align-items: flex-start;
   }
   
   .step-number {

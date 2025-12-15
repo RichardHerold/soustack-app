@@ -30,6 +30,7 @@ export interface SoustackRecipe {
     url?: string;
     adapted?: boolean;
   };
+  image?: string | string[];
   yield?: {
     amount: number;
     unit: string;
@@ -79,6 +80,7 @@ export interface SoustackInstruction {
   equipment?: string;
   ingredients?: string[];
   notes?: string;
+  image?: string;
 }
 
 export interface SoustackEquipment {
