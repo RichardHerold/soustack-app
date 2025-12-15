@@ -1,21 +1,21 @@
 <script lang="ts">
-  import { 
-    filteredRecipes, 
-    searchQuery, 
-    activeTagFilter, 
+  import {
+    filteredRecipes,
+    searchQuery,
+    activeTagFilter,
     allTags,
-    recipeCount 
-  } from '$lib/stores/recipes';
-  import RecipeCard from '$lib/components/RecipeCard.svelte';
-  
+    recipeCount,
+  } from "$lib/stores/recipes";
+  import RecipeCard from "$lib/components/RecipeCard.svelte";
+
   function clearFilters() {
-    $searchQuery = '';
+    $searchQuery = "";
     $activeTagFilter = null;
   }
 </script>
 
 <svelte:head>
-  <title>Soustack - Recipes that compute</title>
+  <title>Soustack</title>
 </svelte:head>
 
 <div class="home">
@@ -28,21 +28,21 @@
         bind:value={$searchQuery}
       />
     </div>
-    
+
     {#if $allTags.length > 0}
       <div class="tags">
-        <button 
-          class="tag" 
+        <button
+          class="tag"
           class:tag-active={$activeTagFilter === null}
-          on:click={() => $activeTagFilter = null}
+          on:click={() => ($activeTagFilter = null)}
         >
           All
         </button>
         {#each $allTags as tag}
-          <button 
-            class="tag" 
+          <button
+            class="tag"
             class:tag-active={$activeTagFilter === tag}
-            on:click={() => $activeTagFilter = tag}
+            on:click={() => ($activeTagFilter = tag)}
           >
             {tag}
           </button>
@@ -50,7 +50,7 @@
       </div>
     {/if}
   </section>
-  
+
   <!-- Recipe Grid -->
   {#if $filteredRecipes.length > 0}
     <section class="recipes-grid">
@@ -85,29 +85,29 @@
     flex-direction: column;
     gap: var(--space-xl);
   }
-  
+
   .search-section {
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
   }
-  
+
   .search-bar input {
     max-width: 400px;
   }
-  
+
   .tags {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-sm);
   }
-  
+
   .recipes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: var(--space-lg);
   }
-  
+
   .empty-state {
     display: flex;
     flex-direction: column;
@@ -117,16 +117,16 @@
     padding: var(--space-2xl);
     gap: var(--space-md);
   }
-  
+
   .empty-icon {
     font-size: 4rem;
     opacity: 0.5;
   }
-  
+
   .empty-state h2 {
     margin: 0;
   }
-  
+
   .empty-state p {
     color: var(--color-text-muted);
     margin: 0;

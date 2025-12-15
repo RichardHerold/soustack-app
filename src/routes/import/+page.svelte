@@ -20,15 +20,22 @@
     error = null;
     
     try {
-      // TODO: Replace with actual scraper from soustack-core
-      // For now, show a placeholder message
-      error = 'URL scraping requires soustack-core. For now, paste JSON directly.';
-      
-      // When soustack-core is integrated:
-      // import { scrapeRecipe } from 'soustack';
-      // const recipe = await scrapeRecipe(urlInput);
-      // const id = await importRecipe(recipe, urlInput);
-      // goto(`/recipe/${id}`);
+      const response = await fetch('/api/scrape', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: urlInput.trim() }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to scrape recipe');
+      }
+
+      const { recipe } = await response.json();
+      const id = await importRecipe(recipe, urlInput.trim());
+      goto(`/recipe/${id}`);
       
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to import recipe';

@@ -19,7 +19,8 @@
     "vite": "^5.0.0"
   },
   "dependencies": {
-    "dexie": "^4.0.0"
+    "dexie": "^4.0.0",
+    "soustack": "^0.1.0"
   },
   "type": "module"
 }
