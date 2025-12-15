@@ -7,11 +7,25 @@
     recipeCount,
   } from "$lib/stores/recipes";
   import RecipeCard from "$lib/components/RecipeCard.svelte";
+  import { cleanupRecipeTags } from "$lib/db/recipes";
+  import { onMount } from "svelte";
 
   function clearFilters() {
     $searchQuery = "";
     $activeTagFilter = null;
   }
+
+  // Run cleanup on mount to fix existing recipes
+  onMount(async () => {
+    try {
+      const cleaned = await cleanupRecipeTags();
+      if (cleaned > 0) {
+        console.log(`Cleaned tags in ${cleaned} recipes`);
+      }
+    } catch (e) {
+      console.error("Error cleaning tags:", e);
+    }
+  });
 </script>
 
 <svelte:head>

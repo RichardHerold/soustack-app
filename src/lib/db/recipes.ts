@@ -284,11 +284,236 @@ export async function exportAllRecipes(): Promise<SoustackRecipe[]> {
 export async function importRecipe(json: string | SoustackRecipe, source?: string): Promise<string> {
   const recipe = typeof json === 'string' ? JSON.parse(json) : json;
   
+  // #region agent log
+  console.log('[DEBUG]', JSON.stringify({
+    location: 'db/recipes.ts:importRecipe',
+    message: 'Importing recipe',
+    data: { 
+      hasName: !!recipe.name, 
+      hasIngredients: !!recipe.ingredients,
+      ingredientsType: Array.isArray(recipe.ingredients) ? 'array' : typeof recipe.ingredients,
+      ingredientsLength: Array.isArray(recipe.ingredients) ? recipe.ingredients.length : null,
+      recipeKeys: Object.keys(recipe)
+    },
+    timestamp: Date.now(),
+    sessionId: 'debug-session',
+    runId: 'run1'
+  }));
+  // #endregion
+  
   // TODO: Validate against Soustack schema using soustack-core
   // For now, just check required fields
   if (!recipe.name || !recipe.ingredients) {
+    // #region agent log
+    console.log('[DEBUG]', JSON.stringify({
+      location: 'db/recipes.ts:importRecipe',
+      message: 'Validation failed',
+      data: { hasName: !!recipe.name, hasIngredients: !!recipe.ingredients },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1'
+    }));
+    // #endregion
     throw new Error('Invalid recipe: missing name or ingredients');
   }
   
+  // #region agent log
+  console.log('[DEBUG]', JSON.stringify({
+    location: 'db/recipes.ts:importRecipe',
+    message: 'Calling addRecipe',
+    data: { recipeName: recipe.name },
+    timestamp: Date.now(),
+    sessionId: 'debug-session',
+    runId: 'run1'
+  }));
+  // #endregion
+  
+  // Clean up tags before importing (remove ingredient names)
+  if (recipe.tags && Array.isArray(recipe.tags) && recipe.ingredients && Array.isArray(recipe.ingredients)) {
+    const ingredientNames = new Set<string>();
+    for (const ing of recipe.ingredients) {
+      if (typeof ing === 'string') {
+        // Extract ingredient name - handle formats like "5 ounces bacon" or "bacon, diced"
+        const parts = ing.toLowerCase().split(/[,\s]+/);
+        for (const part of parts) {
+          const cleaned = part.replace(/[^\w]/g, '');
+          if (cleaned && cleaned.length > 2 && !/^\d+$/.test(cleaned)) {
+            ingredientNames.add(cleaned);
+          }
+        }
+      } else if (ing && typeof ing === 'object' && 'name' in ing) {
+        const name = String(ing.name).toLowerCase().replace(/[^\w]/g, '');
+        if (name && name.length > 2) ingredientNames.add(name);
+      } else if (ing && typeof ing === 'object' && 'item' in ing) {
+        const itemParts = String(ing.item).toLowerCase().split(/[,\s]+/);
+        for (const part of itemParts) {
+          const cleaned = part.replace(/[^\w]/g, '');
+          if (cleaned && cleaned.length > 2 && !/^\d+$/.test(cleaned)) {
+            ingredientNames.add(cleaned);
+          }
+        }
+      }
+    }
+    
+    // #region agent log
+    console.log('[DEBUG]', JSON.stringify({
+      location: 'db/recipes.ts:importRecipe',
+      message: 'Cleaning tags during import',
+      data: { 
+        originalTags: recipe.tags,
+        ingredientNames: Array.from(ingredientNames)
+      },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1'
+    }));
+    // #endregion
+    
+    recipe.tags = recipe.tags.filter((tag: string) => {
+      const tagLower = tag.toLowerCase().trim().replace(/[^\w]/g, '');
+      return !ingredientNames.has(tagLower) && tagLower.length > 2;
+    });
+    
+    if (recipe.tags.length === 0) {
+      delete recipe.tags;
+    }
+    
+    // #region agent log
+    console.log('[DEBUG]', JSON.stringify({
+      location: 'db/recipes.ts:importRecipe',
+      message: 'Tags cleaned',
+      data: { 
+        cleanedTags: recipe.tags,
+        removedCount: (recipe.tags?.length || 0) - (recipe.tags?.length || 0)
+      },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1'
+    }));
+    // #endregion
+  }
+  
   return addRecipe(recipe, source);
+}
+
+/**
+ * Clean up tags in all recipes (remove ingredient names that were incorrectly added as tags)
+ */
+export async function cleanupRecipeTags(): Promise<number> {
+  const recipes = await db.recipes.toArray();
+  let cleanedCount = 0;
+  
+  // #region agent log
+  console.log('[DEBUG]', JSON.stringify({
+    location: 'db/recipes.ts:cleanupRecipeTags',
+    message: 'Starting cleanup',
+    data: { totalRecipes: recipes.length },
+    timestamp: Date.now(),
+    sessionId: 'debug-session',
+    runId: 'run1'
+  }));
+  // #endregion
+  
+  for (const recipe of recipes) {
+    if (!recipe.tags || !Array.isArray(recipe.tags) || !recipe.ingredients || !Array.isArray(recipe.ingredients)) {
+      continue;
+    }
+    
+    const ingredientNames = new Set<string>();
+    for (const ing of recipe.ingredients) {
+      if (typeof ing === 'string') {
+        // Extract ingredient name - handle formats like "5 ounces bacon" or "bacon, diced"
+        const parts = ing.toLowerCase().split(/[,\s]+/);
+        for (const part of parts) {
+          const cleaned = part.replace(/[^\w]/g, '');
+          if (cleaned && cleaned.length > 2 && !/^\d+$/.test(cleaned)) {
+            ingredientNames.add(cleaned);
+          }
+        }
+      } else if (ing && typeof ing === 'object' && 'name' in ing) {
+        const name = String(ing.name).toLowerCase().replace(/[^\w]/g, '');
+        if (name && name.length > 2) ingredientNames.add(name);
+      } else if (ing && typeof ing === 'object' && 'item' in ing) {
+        const itemParts = String(ing.item).toLowerCase().split(/[,\s]+/);
+        for (const part of itemParts) {
+          const cleaned = part.replace(/[^\w]/g, '');
+          if (cleaned && cleaned.length > 2 && !/^\d+$/.test(cleaned)) {
+            ingredientNames.add(cleaned);
+          }
+        }
+      }
+    }
+    
+    // #region agent log
+    console.log('[DEBUG]', JSON.stringify({
+      location: 'db/recipes.ts:cleanupRecipeTags',
+      message: 'Processing recipe',
+      data: { 
+        recipeName: recipe.name,
+        originalTags: recipe.tags,
+        ingredientNames: Array.from(ingredientNames)
+      },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      runId: 'run1'
+    }));
+    // #endregion
+    
+    const cleanedTags = recipe.tags.filter((tag: string) => {
+      const tagLower = tag.toLowerCase().trim().replace(/[^\w]/g, '');
+      const isIngredient = ingredientNames.has(tagLower);
+      const isValid = tagLower.length > 2;
+      
+      // #region agent log
+      if (isIngredient) {
+        console.log('[DEBUG]', JSON.stringify({
+          location: 'db/recipes.ts:cleanupRecipeTags',
+          message: 'Removing tag (matches ingredient)',
+          data: { tag, tagLower, recipeName: recipe.name },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1'
+        }));
+      }
+      // #endregion
+      
+      return !isIngredient && isValid;
+    });
+    
+    if (cleanedTags.length !== recipe.tags.length) {
+      // #region agent log
+      console.log('[DEBUG]', JSON.stringify({
+        location: 'db/recipes.ts:cleanupRecipeTags',
+        message: 'Updating recipe tags',
+        data: { 
+          recipeName: recipe.name,
+          originalTags: recipe.tags,
+          cleanedTags,
+          removedCount: recipe.tags.length - cleanedTags.length
+        },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1'
+      }));
+      // #endregion
+      
+      await db.recipes.update(recipe._id, {
+        tags: cleanedTags.length > 0 ? cleanedTags : undefined
+      });
+      cleanedCount++;
+    }
+  }
+  
+  // #region agent log
+  console.log('[DEBUG]', JSON.stringify({
+    location: 'db/recipes.ts:cleanupRecipeTags',
+    message: 'Cleanup completed',
+    data: { cleanedCount },
+    timestamp: Date.now(),
+    sessionId: 'debug-session',
+    runId: 'run1'
+  }));
+  // #endregion
+  
+  return cleanedCount;
 }
