@@ -11,11 +11,11 @@
   
   --color-bg: #FFFAF0; /* Floral - Canvas */
   --color-surface: #FFFEF9; /* Warm white - softer than pure white */
-  --color-border: #94A3B8; /* Slate - Structural Lines */
+  --color-border: #64748B; /* Slate - Structural Lines (improved contrast) */
   
   --color-text: #0F172A; /* Midnight - Text & Backgrounds */
-  --color-text-muted: #64748B;
-  --color-text-light: #94A3B8;
+  --color-text-muted: #475569; /* Improved contrast for better accessibility */
+  --color-text-light: #64748B; /* Improved contrast to meet WCAG AA */
   
   --color-success: #22c55e;
   --color-warning: #f59e0b;
